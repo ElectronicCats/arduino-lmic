@@ -217,7 +217,10 @@ void setup() {
     Serial.begin(9600);
     Serial.println(F("Starting"));
 
-    dht.begin();
+    //BastWAN pines RFM Radio
+    pinMode(RFM_TCX_ON, OUTPUT);
+    pinMode(RFM_SWITCH, OUTPUT);
+    pinMode(LED_BUILTIN, OUTPUT);
 
     // LMIC init
     os_init();
