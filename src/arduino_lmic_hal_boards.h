@@ -40,6 +40,8 @@ const HalPinmap_t* GetPinmap_ttgo_lora32_v1();
 const HalPinmap_t* GetPinmap_heltec_lora32();
 const HalPinmap_t* GetPinmap_Disco_L072cz_Lrwan1();
 
+const HalPinmap_t *GetPinmap_bastwan();
+
 const HalPinmap_t *GetPinmap_ThisBoard();
 
 }; /* namespace Arduino_LIMC */
