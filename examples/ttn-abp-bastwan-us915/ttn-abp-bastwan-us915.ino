@@ -189,6 +189,7 @@ void setup() {
   delay(100);
   Serial.println(F("Starting"));
 
+  //BastWAN pines RFM Radio
   pinMode(RFM_TCX_ON, OUTPUT);
   pinMode(RFM_SWITCH, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
@@ -214,8 +215,10 @@ void setup() {
     LMIC_disableChannel(c);
   }
 
-  // We'll only enable Channel 16 (905.5Mhz) since we're transmitting on a single-channel
-  LMIC_enableChannel(16);
+  // in the US, with TTN, it saves join time if we start on subband 1 (channels 8-15). This will
+  // get overridden after the join by parameters from the network. If working with other
+  // networks or in other regions, this will need to be changed.
+  LMIC_selectSubBand(0);
 
   // Disable link check validation
   LMIC_setLinkCheckMode(0);
