@@ -66,17 +66,46 @@ void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
-// this gets callled by the library but we choose not to display any info;
+// this gets called by the library but we choose not to display any info;
 // and no action is required.
 void onEvent (ev_t ev) {
 }
+
+/*************************************************************\
+|     Work around for inconsistency in providing
+|     Serial.dtr() method
+\*************************************************************/
+
+// Use SFINAE to deal with lack of Serial.dtr() on some platforms
+template<class T>
+auto getDtr_help(T* obj)
+ -> decltype(  obj->dtr()  )
+{
+    return     obj->dtr();
+}
+// use this if there's no dtr() method
+auto getDtr_help(...) -> bool
+{
+    return false;
+}
+
+// this wrapper lets us avoid use of explicit pointers
+template<class T>
+bool getDtr(T &obj)
+  {
+  return getDtr_help(&obj);
+  }
+
+/*************************************************************\
+|     Print stub for use by LMIC
+\*************************************************************/
 
 extern "C" {
 void lmic_printf(const char *fmt, ...);
 };
 
 void lmic_printf(const char *fmt, ...) {
-  if (! Serial.dtr())
+  if (! getDtr(Serial))
     return;
 
   char buf[256];
@@ -88,8 +117,12 @@ void lmic_printf(const char *fmt, ...) {
 
   // in case we overflowed:
   buf[sizeof(buf) - 1] = '\0';
-  if (Serial.dtr()) Serial.print(buf);
+  if (getDtr(Serial)) Serial.print(buf);
 }
+
+/*************************************************************\
+|     Application logic
+\*************************************************************/
 
 osjob_t txjob;
 osjob_t timeoutjob;
@@ -175,7 +208,7 @@ void setup() {
 
   // even after the delay, we wait for the host to open the port. operator
   // bool(Serial) just checks dtr(), and it tosses in a 10ms delay.
-  while(! Serial.dtr())
+  while(! getDtr(Serial))
         /* wait for the PC */;
 
   Serial.begin(115200);

@@ -76,6 +76,8 @@ const lmic_pinmap lmic_pins = {
 // Just like Feather M0 LoRa, but uses SPI at 1MHz; and that's only
 // because MCCI doesn't have a test board; probably higher frequencies
 // will work.
+// /!\ By default Feather 32u4's pin 6 and DIO1 are not connected. Please 
+// ensure they are connected.
 const lmic_pinmap lmic_pins = {
     .nss = 8,
     .rxtx = LMIC_UNUSED_PIN,
@@ -115,12 +117,41 @@ void os_getDevKey (u1_t* buf) { }
 void onEvent (ev_t ev) {
 }
 
+/*************************************************************\
+|     Work around for inconsistency in providing
+|     Serial.dtr() method
+\*************************************************************/
+
+// Use SFINAE to deal with lack of Serial.dtr() on some platforms
+template<class T>
+auto getDtr_help(T* obj)
+ -> decltype(  obj->dtr()  )
+{
+    return     obj->dtr();
+}
+// use this if there's no dtr() method
+auto getDtr_help(...) -> bool
+{
+    return false;
+}
+
+// this wrapper lets us avoid use of explicit pointers
+template<class T>
+bool getDtr(T &obj)
+  {
+  return getDtr_help(&obj);
+  }
+
+/*************************************************************\
+|     Print stub for use by LMIC
+\*************************************************************/
+
 extern "C" {
 void lmic_printf(const char *fmt, ...);
 };
 
 void lmic_printf(const char *fmt, ...) {
-        if (! Serial.dtr())
+        if (! getDtr(Serial))
                 return;
 
         char buf[256];
@@ -132,8 +163,12 @@ void lmic_printf(const char *fmt, ...) {
 
         // in case we overflowed:
         buf[sizeof(buf) - 1] = '\0';
-        if (Serial.dtr()) Serial.print(buf);
+        if (getDtr(Serial)) Serial.print(buf);
 }
+
+/*************************************************************\
+|     Application logic
+\*************************************************************/
 
 osjob_t txjob;
 osjob_t timeoutjob;
@@ -219,7 +254,7 @@ void setup() {
 
   // even after the delay, we wait for the host to open the port. operator
   // bool(Serial) just checks dtr(), and it tosses in a 10ms delay.
-  while(! Serial.dtr())
+  while(! getDtr(Serial))
         /* wait for the PC */;
 
   Serial.begin(115200);

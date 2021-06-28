@@ -95,6 +95,8 @@ const lmic_pinmap lmic_pins = {
 // Just like Feather M0 LoRa, but uses SPI at 1MHz; and that's only
 // because MCCI doesn't have a test board; probably higher frequencies
 // will work.
+// /!\ By default Feather 32u4's pin 6 and DIO1 are not connected. Please 
+// ensure they are connected.
 const lmic_pinmap lmic_pins = {
     .nss = 8,
     .rxtx = LMIC_UNUSED_PIN,

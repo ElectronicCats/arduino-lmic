@@ -1,9 +1,11 @@
-# Arduino-LMIC library
+# Arduino-LMIC library ("MCCI LoRaWAN LMIC Library")
 
 This repository contains the IBM LMIC (LoRaWAN-MAC-in-C) library, slightly
 modified to run in the Arduino environment, allowing using the SX1272,
 SX1276 transceivers and compatible modules (such as some HopeRF RFM9x
 modules and the Murata LoRa modules).
+
+> Note on names: the library was originally ported to Arduino by Matthijs Kooijman and Thomas Telkamp, and was named Arduino LMIC. Subsequently, MCCI did a lot of work to support other regions, and ultimately took over maintenance. The Arduino IDE doesn't like two libraries with the same name, so we had to come up with a new name. So in the IDE, it will appear as MCCI LoRaWAN LMIC Library; but all us know it by the primary header file, which is `<arduino_lmic.h>`.
 
 Information about the LoRaWAN protocol is summarized in [LoRaWAN-at-a-glance](doc/LoRaWAN-at-a-glance.pdf). Full information is available from the [LoRa Alliance](https://lora-alliance.org).
 
@@ -16,10 +18,11 @@ see the PDF files in the doc subdirectory.
 
 A separate library, [MCCI `arduino-lorawan`](https://github.com/mcci-catena/arduino-lorawan), provides a higher level, more Arduino-like wrapper which may be useful.
 
-This library requires Arduino IDE version 1.6.6 or above, since it
-requires C99 mode to be enabled by default.
+The examples in this library (apart from the compliance sketch) are somewhat primitive. A very complete cross-platform Arduino application based on the LMIC has been published by Leonel Lopes Parente ([`@lnlp`](https://github.com/lnlp)) as [LMIC-node](https://github.com/lnlp/LMIC-node). That application specifically targets The Things Network.
 
-[![GitHub release](https://img.shields.io/github/release/mcci-catena/arduino-lmic.svg)](https://github.com/mcci-catena/arduino-lmic/releases/latest) [![GitHub commits](https://img.shields.io/github/commits-since/mcci-catena/arduino-lmic/latest.svg)](https://github.com/mcci-catena/arduino-lmic/compare/v3.3.0...master) [![Build Status](https://travis-ci.com/mcci-catena/arduino-lmic.svg?branch=master)](https://travis-ci.com/mcci-catena/arduino-lmic)
+Although the wrappers in this library are designed to make the LMIC useful in the Arduino environment, the maintainers have tried to be careful to keep the core LMIC code generally useful. For example, I use this library without modification (but with wrappers) on a RISC-V platform in a non-Arduino environment.
+
+[![GitHub release](https://img.shields.io/github/release/mcci-catena/arduino-lmic.svg)](https://github.com/mcci-catena/arduino-lmic/releases/latest) [![GitHub commits](https://img.shields.io/github/commits-since/mcci-catena/arduino-lmic/latest.svg)](https://github.com/mcci-catena/arduino-lmic/compare/v4.0.0...master) [![Arduino CI](https://img.shields.io/github/workflow/status/mcci-catena/arduino-lmic/Arduino%20CI)](https://github.com/mcci-catena/arduino-lmic/actions)
 
 **Contents:**
 
@@ -42,73 +45,73 @@ requires C99 mode to be enabled by default.
 	- [If you've found a bug](#if-youve-found-a-bug)
 - [Features](#features)
 - [Additional Documentation](#additional-documentation)
-        - [PDF/Word Documentation](#pdfword-documentation)
-        - [Adding Regions](#adding-regions)
-        - [Known bugs and issues](#known-bugs-and-issues)
-                - [Timing Issues](#timing-issues)
-                - [Working with MCCI Murata-based boards](#working-with-mcci-murata-based-boards)
-                - [Event-Handling Issues](#event-handling-issues)
+	- [PDF/Word Documentation](#pdfword-documentation)
+	- [Adding Regions](#adding-regions)
+	- [Known bugs and issues](#known-bugs-and-issues)
+		- [Timing Issues](#timing-issues)
+		- [Working with MCCI Murata-based boards](#working-with-mcci-murata-based-boards)
+		- [Event-Handling Issues](#event-handling-issues)
 - [Configuration](#configuration)
-        - [Selecting the LoRaWAN Version](#selecting-the-lorawan-version)
-                - [Selecting V1.0.2](#selecting-v102)
-                - [Selecting V1.0.3](#selecting-v103)
-        - [Selecting the LoRaWAN Region Configuration](#selecting-the-lorawan-region-configuration)
-                - [eu868, as923, in866, kr920](#eu868-as923-in866-kr920)
-                - [us915, au915](#us915-au915)
-        - [Selecting the target radio transceiver](#selecting-the-target-radio-transceiver)
-        - [Controlling use of interrupts](#controlling-use-of-interrupts)
-        - [Disabling PING](#disabling-ping)
-        - [Disabling Beacons](#disabling-beacons)
-        - [Enabling Network Time Support](#enabling-network-time-support)
-        - [Rarely changed variables](#rarely-changed-variables)
-                - [Changing debug output](#changing-debug-output)
-                - [Getting debug from the RF library](#getting-debug-from-the-rf-library)
-                - [Selecting the AES library](#selecting-the-aes-library)
-                - [Defining the OS Tick Frequency](#defining-the-os-tick-frequency)
-                - [Setting the SPI-bus frequency](#setting-the-spi-bus-frequency)
-                - [Changing handling of runtime assertion failures](#changing-handling-of-runtime-assertion-failures)
-                - [Disabling JOIN](#disabling-join)
-                - [Disabling Class A MAC commands](#disabling-class-a-mac-commands)
-                - [Disabling Class B MAC commands](#disabling-class-b-mac-commands)
-                - [Disabling user events](#disabling-user-events)
-                - [Disabling external reference to `onEvent()`](#disabling-external-reference-to-onevent)
-                - [Enabling long messages](#enabling-long-messages)
-                - [Enabling LMIC event logging calls](#enabling-lmic-event-logging-calls)
-                - [Special purpose](#special-purpose)
+	- [Selecting the LoRaWAN Version](#selecting-the-lorawan-version)
+		- [Selecting V1.0.2](#selecting-v102)
+		- [Selecting V1.0.3](#selecting-v103)
+	- [Selecting the LoRaWAN Region Configuration](#selecting-the-lorawan-region-configuration)
+		- [eu868, as923, in866, kr920](#eu868-as923-in866-kr920)
+		- [us915, au915](#us915-au915)
+	- [Selecting the target radio transceiver](#selecting-the-target-radio-transceiver)
+	- [Controlling use of interrupts](#controlling-use-of-interrupts)
+	- [Disabling PING](#disabling-ping)
+	- [Disabling Beacons](#disabling-beacons)
+	- [Enabling Network Time Support](#enabling-network-time-support)
+	- [Rarely changed variables](#rarely-changed-variables)
+		- [Changing debug output](#changing-debug-output)
+		- [Getting debug from the RF library](#getting-debug-from-the-rf-library)
+		- [Selecting the AES library](#selecting-the-aes-library)
+		- [Defining the OS Tick Frequency](#defining-the-os-tick-frequency)
+		- [Setting the SPI-bus frequency](#setting-the-spi-bus-frequency)
+		- [Changing handling of runtime assertion failures](#changing-handling-of-runtime-assertion-failures)
+		- [Disabling JOIN](#disabling-join)
+		- [Disabling Class A MAC commands](#disabling-class-a-mac-commands)
+		- [Disabling Class B MAC commands](#disabling-class-b-mac-commands)
+		- [Disabling user events](#disabling-user-events)
+		- [Disabling external reference to `onEvent()`](#disabling-external-reference-to-onevent)
+		- [Enabling long messages](#enabling-long-messages)
+		- [Enabling LMIC event logging calls](#enabling-lmic-event-logging-calls)
+		- [Special purpose](#special-purpose)
 - [Supported hardware](#supported-hardware)
 - [Pre-Integrated Boards](#pre-integrated-boards)
 - [PlatformIO](#platformio)
 - [Manual configuration](#manual-configuration)
-        - [Power](#power)
-        - [SPI](#spi)
-        - [DIO pins](#dio-pins)
-        - [Reset](#reset)
-        - [RXTX](#rxtx)
-        - [RXTX Polarity](#rxtx-polarity)
-        - [Pin mapping](#pin-mapping)
-                - [Advanced initialization](#advanced-initialization)
-                - [HalConfiguration_t methods](#halconfiguration_t-methods)
-                - [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
+	- [Power](#power)
+	- [SPI](#spi)
+	- [DIO pins](#dio-pins)
+	- [Reset](#reset)
+	- [RXTX](#rxtx)
+	- [RXTX Polarity](#rxtx-polarity)
+	- [Pin mapping](#pin-mapping)
+		- [Advanced initialization](#advanced-initialization)
+		- [HalConfiguration_t methods](#halconfiguration_t-methods)
+		- [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
 - [Example Sketches](#example-sketches)
 - [Timing](#timing)
-        - [Controlling protocol timing](#controlling-protocol-timing)
-        - [`LMIC_setClockError()`](#lmic_setclockerror)
-        - [Interrupts and Arduino system timing](#interrupts-and-arduino-system-timing)
+	- [Controlling protocol timing](#controlling-protocol-timing)
+	- [`LMIC_setClockError()`](#lmic_setclockerror)
+	- [Interrupts and Arduino system timing](#interrupts-and-arduino-system-timing)
 - [Downlink data rate](#downlink-data-rate)
 - [Encoding Utilities](#encoding-utilities)
-        - [sflt16](#sflt16)
-                - [JavaScript decoder](#javascript-decoder)
-        - [uflt16](#uflt16)
-                - [uflt16 JavaScript decoder](#uflt16-javascript-decoder)
-        - [sflt12](#sflt12)
-                - [sflt12f JavaScript decoder](#sflt12f-javascript-decoder)
-        - [uflt12](#uflt12)
-                - [uflt12f JavaScript decoder](#uflt12f-javascript-decoder)
+	- [sflt16](#sflt16)
+		- [JavaScript decoder](#javascript-decoder)
+	- [uflt16](#uflt16)
+		- [uflt16 JavaScript decoder](#uflt16-javascript-decoder)
+	- [sflt12](#sflt12)
+		- [sflt12f JavaScript decoder](#sflt12f-javascript-decoder)
+	- [uflt12](#uflt12)
+		- [uflt12f JavaScript decoder](#uflt12f-javascript-decoder)
 - [Release History](#release-history)
 - [Contributions](#contributions)
 - [Trademark Acknowledgements](#trademark-acknowledgements)
 - [License](#license)
-        - [Support Open Source Hardware and Software](#support-open-source-hardware-and-software)
+	- [Support Open Source Hardware and Software](#support-open-source-hardware-and-software)
 
 <!-- /TOC -->
 <!-- markdownlint-restore -->
@@ -288,7 +291,6 @@ If the library is configured for US915 operation, we make the following changes:
 
 - Add the APIs `LMIC_enableChannel()`,
 `LMIC_enableSubBand()`, `LMIC_disableSubBand()`, and `LMIC_selectSubBand()`.
-- Add the constants `MAX_XCHANNELS`.
 - Add a number of additional `DR_...` symbols.
 
 ### Selecting the target radio transceiver
@@ -831,7 +833,7 @@ This library provides several examples.
 
 - [`compliance-otaa-halconfig.ino`](examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino) is a test sketch that is used for LoRaWAN compliance testing.
 
-- [`helium-us9115.ino`](examples\helium-us915\helium-us915.ino) is a complete example for using the LMIC on the Helium network. It's very similar to the OTAA examples, but sets up the prejoin parameters properly for the initial deployment of Helium LoRaWAN support.
+- [`helium-otaa.ino`](examples/helium-otaa/helium-otaa.ino) is a complete example for using the LMIC on the Helium network. It's very similar to the OTAA examples, but sets up the prejoin parameters properly for the initial deployment of Helium LoRaWAN support.
 
 - [`ttn-otaa-network-time.ino`](examples/ttn-otaa-network-time/ttn-otaa-network-time.ino) demonstrates use of the network time request. Network time requests are not supported by The Things Network as of the time of writing.
 
@@ -1238,19 +1240,38 @@ function uflt12f(rawUflt12)
 
 ## Release History
 
+- HEAD contains the following changes
+  - Adapt ttn-otaa-network-time example to be compatible with [PaulStoffregen/Time](https://github.com/PaulStoffregen/Time) v1.6.1, which deletes `Time.h` in favor of `TimeLib.h` [#763](https://github.com/mcci-catena/arduino-lmic/issues/763). Version is v4.0.1-pre1.
+
+- v4.0 is a major release; changes are significant enough to be "likely breaking". It includes the following changes.
+
+  - Fix some broken documentation references [#644](https://github.com/mcci-catena/arduino-lmic/issues/644), [#646](https://github.com/mcci-catena/arduino-lmic/pulls/646), [#673](https://github.com/mcci-catena/arduino-lmic/pulls/673).
+  - Re-added CI testing, since Travis CI no longer works for us [#647](https://github.com/mcci-catena/arduino-lmic/issues/647); fixed AVR compliance CI compile [#679](https://github.com/mcci-catena/arduino-lmic/issues/679).
+  - Don't use `defined()` in macro definitions [#606](https://github.com/mcci-catena/arduino-lmic/issues/606)
+  - Fix a warning on AVR32 [#709](https://github.com/mcci-catena/arduino-lmic/pulls/709).
+  - Fix Helium link in examples [#715](https://github.com/mcci-catena/arduino-lmic/issues/715), [#718](https://github.com/mcci-catena/arduino-lmic/pulls/718).
+  - Remove `XCHANNEL` support from US region [#404](https://github.com/mcci-catena/arduino-lmic/issues/404)
+  - Assign channels randomly without replacement [#515](https://github.com/mcci-catena/arduino-lmic/issues/515), [#619](https://github.com/mcci-catena/arduino-lmic/issues/619), [#730](https://github.com/mcci-catena/arduino-lmic/issues/730).
+  - Don't allow `LMIC_setupChannel()` to change default channels [#722](https://github.com/mcci-catena/arduino-lmic/issues/722). Add `LMIC_queryNumDefaultChannels()` [#700](https://github.com/mcci-catena/arduino-lmic/issues/700).
+  - Don't accept out-of-range DRs from MAC downlink messages [#723](https://github.com/mcci-catena/arduino-lmic/issues/723)
+  - Adopt semantic versions completely [#726](https://github.com/mcci-catena/arduino-lmic/issues/726).
+  - Implement JoinAccept CFList processing for US/AU [#739](https://github.com/mcci-catena/arduino-lmic/issues/739).
+  - Correct JoinAccept CFList processing for AS923 [#740](https://github.com/mcci-catena/arduino-lmic/issues/740).
+  - Don't compile board config objects when we know for sure they'll not be used; compilers can't always tell [#736](https://github.com/mcci-catena/arduino-lmic/issues/736).
+
 - v3.3.0 is primarily a maintenance and roll-up release.
 
-   - Added [LoRaWAN-at-a-glance](doc/LoRaWAN-at-a-glance.pdf) and a [state diagram of the LMIC](doc/LMIC-FSM.pdf).
-   - Several PRs from Matthijs Kooijman to improve compatibility with the original Arduino LMIC ([#608](https://github.com/mcci-catena/arduino-lmic/issue/608), [#609](https://github.com/mcci-catena/arduino-lmic/issue/609)).
-   - Numerous documentation improvements contributed by the community ([#431](https://github.com/mcci-catena/arduino-lmic/issue/), [#612](https://github.com/mcci-catena/arduino-lmic/issue/612), [#614](https://github.com/mcci-catena/arduino-lmic/issue/614), [#625](https://github.com/mcci-catena/arduino-lmic/issue/625)).
+  - Added [LoRaWAN-at-a-glance](doc/LoRaWAN-at-a-glance.pdf) and a [state diagram of the LMIC](doc/LMIC-FSM.pdf).
+  - Several PRs from Matthijs Kooijman to improve compatibility with the original Arduino LMIC ([#608](https://github.com/mcci-catena/arduino-lmic/issues/608), [#609](https://github.com/mcci-catena/arduino-lmic/issues/609)).
+  - Numerous documentation improvements contributed by the community ([#431](https://github.com/mcci-catena/arduino-lmic/issues/431), [#612](https://github.com/mcci-catena/arduino-lmic/issues/612), [#614](https://github.com/mcci-catena/arduino-lmic/issues/614), [#625](https://github.com/mcci-catena/arduino-lmic/issues/625)).
 
 - v3.2.0 has the following changes:
 
-  - [#550](https://github.com/mcci-catena/arduino-lmic/issue/550) fixes debug prints in `ttn-otaa.ino`.
-  - [#553](https://github.com/mcci-catena/arduino-lmic/issue/553) add full regional support to `raw.ino` and `ttn-abp.ino`.
-  - [#570](https://github.com/mcci-catena/arduino-lmic/issue/570) corrects handling of piggy-back MAC responses when sending an `LMIC_sendAlive()` (`OPMODE_POLL`) message.
-  - [#524](https://github.com/mcci-catena/arduino-lmic/issue/524) corrects handling of interrupt disable, and slightly refactors the low-level interrupt handling wrappers for clarity. With this change, `radio_irq_handler_v2()` is never called except from the run loop, and so the radio driver need not (and does not) disable interrupts. Version is v3.1.0.20.
-  - [#568](https://github.com/mcci-catena/arduino-lmic/issue/568) improves documentation for the radio driver.
+  - [#550](https://github.com/mcci-catena/arduino-lmic/issues/550) fixes debug prints in `ttn-otaa.ino`.
+  - [#553](https://github.com/mcci-catena/arduino-lmic/issues/553) add full regional support to `raw.ino` and `ttn-abp.ino`.
+  - [#570](https://github.com/mcci-catena/arduino-lmic/issues/570) corrects handling of piggy-back MAC responses when sending an `LMIC_sendAlive()` (`OPMODE_POLL`) message.
+  - [#524](https://github.com/mcci-catena/arduino-lmic/issues/524) corrects handling of interrupt disable, and slightly refactors the low-level interrupt handling wrappers for clarity. With this change, `radio_irq_handler_v2()` is never called except from the run loop, and so the radio driver need not (and does not) disable interrupts. Version is v3.1.0.20.
+  - [#568](https://github.com/mcci-catena/arduino-lmic/issues/568) improves documentation for the radio driver.
   - [#537](https://github.com/mcci-catena/arduino-lmic/pull/537) fixes a compile error in SX1272 support. (Thanks @ricaun.) Version is v3.1.0.10.
 
 - v3.1.0 officially adopts the changes from v3.0.99. There were dozens of changes; check the GitHub issue logs and change logs. This was a breaking release (due to changes in data layout in the LMIC structure; the structure is accessed by apps).
@@ -1324,7 +1345,7 @@ This library started from the IBM V1.5 open-source code.
 
 - [`@ngraziano`](https://github.com/ngraziano) did extensive testing and contributed numerous ADR-related patches.
 
-There are many others, who have contributed code and also participated in discussions, performed testing, reported problems and results. Thanks to all who have participated.
+There are many others, who have contributed code and also participated in discussions, performed testing, reported problems and results. Thanks to all who have participated. We hope to use something like [All Contributors](https://https://allcontributors.org/) to help keep this up to date, but so far the automation isn't working.
 
 ## Trademark Acknowledgements
 

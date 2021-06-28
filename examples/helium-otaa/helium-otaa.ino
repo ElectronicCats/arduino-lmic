@@ -35,6 +35,7 @@
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
+#include <arduino_lmic_hal_boards.h>
 
 //
 // For normal use, we require that you edit the sketch to replace FILLMEIN
@@ -74,60 +75,6 @@ static osjob_t sendjob;
 // cycle limitations).
 const unsigned TX_INTERVAL = 60;
 
-// Pin mapping
-//
-// Adafruit BSPs are not consistent -- m0 express defs ARDUINO_SAMD_FEATHER_M0,
-// m0 defs ADAFRUIT_FEATHER_M0
-//
-#if defined(ARDUINO_SAMD_FEATHER_M0) || defined(ADAFRUIT_FEATHER_M0)
-// Pin mapping for Adafruit Feather M0 LoRa, etc.
-const lmic_pinmap lmic_pins = {
-    .nss = 8,
-    .rxtx = LMIC_UNUSED_PIN,
-    .rst = 4,
-    .dio = {3, 6, LMIC_UNUSED_PIN},
-    .rxtx_rx_active = 0,
-    .rssi_cal = 8,              // LBT cal for the Adafruit Feather M0 LoRa, in dB
-    .spi_freq = 8000000,
-};
-#elif defined(ARDUINO_AVR_FEATHER32U4)
-// Pin mapping for Adafruit Feather 32u4 LoRa, etc.
-// Just like Feather M0 LoRa, but uses SPI at 1MHz; and that's only
-// because MCCI doesn't have a test board; probably higher frequencies
-// will work.
-const lmic_pinmap lmic_pins = {
-    .nss = 8,
-    .rxtx = LMIC_UNUSED_PIN,
-    .rst = 4,
-    .dio = {7, 6, LMIC_UNUSED_PIN},
-    .rxtx_rx_active = 0,
-    .rssi_cal = 8,              // LBT cal for the Adafruit Feather 32U4 LoRa, in dB
-    .spi_freq = 1000000,
-};
-#elif defined(ARDUINO_CATENA_4551)
-// Pin mapping for Murata module / Catena 4551
-const lmic_pinmap lmic_pins = {
-        .nss = 7,
-        .rxtx = 29,
-        .rst = 8,
-        .dio = { 25,    // DIO0 (IRQ) is D25
-                 26,    // DIO1 is D26
-                 27,    // DIO2 is D27
-               },
-        .rxtx_rx_active = 1,
-        .rssi_cal = 10,
-        .spi_freq = 8000000     // 8MHz
-};
-#elif defined(MCCI_CATENA_4610) 
-#include "arduino_lmic_hal_boards.h"
-const lmic_pinmap lmic_pins = *Arduino_LMIC::GetPinmap_Catena4610();
-#elif defined(ARDUINO_DISCO_L072CZ_LRWAN1)
-#include "arduino_lmic_hal_boards.h"
-// Pin mapping Discovery 
-const lmic_pinmap lmic_pins = *Arduino_LMIC::GetPinmap_Disco_L072cz_Lrwan1();
-#else
-# error "Unknown target"
-#endif
 
 void printHex2(unsigned v) {
     v &= 0xff;
@@ -291,8 +238,31 @@ void setup() {
     SPI.setSSEL(RADIO_NSS_PORT);
     #endif
 
-    // LMIC init
-    os_init();
+    // Pin mapping
+    //  We use the built-in mapping -- see src/hal/getpinmap_thisboard.cpp
+    //
+    // If your board isn't supported, declare an lmic_pinmap object as static
+    // or global, and set pPimMap to that pointer.
+    //
+    const lmic_pinmap *pPinMap = Arduino_LMIC::GetPinmap_ThisBoard();
+
+    // don't die mysteriously; die noisily.
+    if (pPinMap == nullptr) {
+        pinMode(LED_BUILTIN, OUTPUT);
+        for (;;) {
+            // flash lights, sleep.
+            for (int i = 0; i < 5; ++i) {
+                digitalWrite(LED_BUILTIN, 1);
+                delay(100);
+                digitalWrite(LED_BUILTIN, 0);
+                delay(900);
+            }
+            Serial.println(F("board not known to library; add pinmap or update getconfig_thisboard.cpp"));
+        }
+    }
+
+    os_init_ex(pPinMap);
+
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
 
@@ -305,7 +275,12 @@ void setup() {
 
     LMIC_setLinkCheckMode(0);
     LMIC_setDrTxpow(DR_SF7,14);
+
+#if CFG_LMIC_US_like
+    // This makes joins faster in the US because we don't wander all over the
+    // spectrum.
     LMIC_selectSubBand(1);
+#endif
 
     // Start job (sending automatically starts OTAA too)
     do_send(&sendjob);
